@@ -16,6 +16,11 @@ public class LinkedList<E> implements List<E> {
     _length = 0;
   }
 
+  public LinkedList(Collection<? extends E> c) {
+    this();
+    addAll(c);
+  }
+
   public boolean add(E e) {
     SinglyLinkedNode<E> newElement = new SinglyLinkedNode<E>(e);
     _tail.setNext(newElement);
