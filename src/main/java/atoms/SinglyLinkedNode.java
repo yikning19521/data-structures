@@ -6,7 +6,7 @@ package atoms;
 public class SinglyLinkedNode<V> {
 
   private V _value;
-  private SinglyLinkedNode _next;
+  private SinglyLinkedNode<V> _next;
 
   public SinglyLinkedNode(V value) {
     this(value, null);
@@ -23,6 +23,6 @@ public class SinglyLinkedNode<V> {
 
   public void setNext(SinglyLinkedNode next) { _next = next; }
 
-  public SinglyLinkedNode getNext() { return _next; }
+  public SinglyLinkedNode<V> getNext() { return _next; }
 
 }

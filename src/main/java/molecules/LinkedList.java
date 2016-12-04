@@ -4,28 +4,34 @@ import atoms.SinglyLinkedNode;
 
 import java.util.*;
 
-/**
- * Created by schan on 04/12/2016.
- */
-public class LinkedList<E> implements List {
+public class LinkedList<E> implements List<E> {
 
-  private SinglyLinkedNode _head;
-  private SinglyLinkedNode _tail;
+  private SinglyLinkedNode<E> _head;
+  private SinglyLinkedNode<E> _tail;
   private int _length;
 
+
+  public LinkedList() {
+    _head = _tail = null;
+    _length = 0;
+  }
+
   public boolean add(E e) {
-    _length += 1;
-    SinglyLinkedNode newElement = new SinglyLinkedNode<E>(e);
+    SinglyLinkedNode<E> newElement = new SinglyLinkedNode<E>(e);
     _tail.setNext(newElement);
+    _length += 1;
+    if (_length == 1) {
+      _head = _tail = newElement;
+    }
     return true;
   }
 
   public void add(int index, E element) {
     checkIndex(index);
-
-    _length += 1;
-    SinglyLinkedNode newElement = new SinglyLinkedNode<E>(element);
-    if (index == 0) {
+    SinglyLinkedNode<E> newElement = new SinglyLinkedNode<E>(element);
+    if (_length == 0) {
+      _head = _tail = newElement;
+    } else if (index == 0) {
       newElement.setNext(_head);
       _head = newElement;
     } else if (index == _length) {
@@ -42,15 +48,12 @@ public class LinkedList<E> implements List {
       previous.setNext(newElement);
       newElement.setNext(next);
     }
+    _length += 1;
   }
 
   public boolean addAll(Collection<? extends E> c) {
-    SinglyLinkedNode newElement;
     for (E e : c) {
-      newElement = new SinglyLinkedNode<E>(e);
-      _tail.setNext(newElement);
-      _tail = newElement;
-      _length += 1;
+      add(e);
     }
     return true;
   }
@@ -59,39 +62,16 @@ public class LinkedList<E> implements List {
     checkIndex(index);
     int collectionSize = c.size();
     if (collectionSize == 0) {
-      return true;
+      return false;
     }
     if (index == _length) {
       addAll(c);
     }
-
-    if (index == 0) {
-      E[] values = (E[]) c.toArray();
-      SinglyLinkedNode start = new SinglyLinkedNode<E>(values[0]);
-      SinglyLinkedNode end = start;
-      int collectionIndex = 1;
-      while (collectionIndex < collectionSize) {
-        SinglyLinkedNode<E> newNode = new SinglyLinkedNode<E>(values[collectionIndex]);
-        end.setNext(newNode);
-        end = newNode;
-        collectionIndex += 1;
-      }
-
-      end.setNext(_head);
-      _head = start;
-
-    } else {
-      SinglyLinkedNode previousNode = getNode(index - 1);
-      SinglyLinkedNode nextNode = previousNode.getNext();
-
-      for (E e : c) {
-        SinglyLinkedNode newNode = new SinglyLinkedNode<E>(e);
-        newNode.setNext(nextNode);
-        previousNode.setNext(newNode);
-        previousNode = newNode;
-      }
+    int i = index;
+    for (E e : c) {
+      add(i, e);
+      i += 1;
     }
-    _length += collectionSize;
     return true;
   }
 
@@ -101,10 +81,8 @@ public class LinkedList<E> implements List {
   }
 
   public boolean contains(Object o) {
-    Iterator<E> iterator = iterator();
-    while (iterator.hasNext()) {
-      E value = iterator.next();
-      if (value.equals(o)) {
+    for (E e : this) {
+      if (e.equals(o)) {
         return true;
       }
     }
@@ -112,31 +90,22 @@ public class LinkedList<E> implements List {
   }
 
   public boolean containsAll(Collection<?> c) {
-    Object[] collectionValues = c.toArray();
-    for (Object o : collectionValues) {
-      Iterator<E> iterator = iterator();
-      boolean containsValue = false;
-      while (iterator.hasNext()) {
-        E value = iterator.next();
-        if (value.equals(o)) {
-          containsValue = true;
-          break;
-        }
+    for (Object o : c) {
+      if (!contains(o)) {
+        return false;
       }
-      if (!containsValue) return false;
     }
     return true;
   }
 
   public E get(int index) {
-    return (E) getNode(index).getValue();
+    checkIndex(index);
+    return getNode(index).getValue();
   }
 
   public int hashCode() {
     int hashCode = 1;
-    Iterator<E> iterator = iterator();
-    while (iterator.hasNext()) {
-      E e = iterator.next();
+    for (E e : this) {
       hashCode = (31 * hashCode) + (e == null ? 0 : e.hashCode());
     }
     return hashCode;
@@ -160,7 +129,7 @@ public class LinkedList<E> implements List {
   }
 
   public Iterator<E> iterator() {
-    return new SinglyLinkedNodeIterator<E>(_head);
+    return new SinglyLinkedNodeIterator();
   }
 
   public int lastIndexOf(Object o) {
@@ -178,27 +147,75 @@ public class LinkedList<E> implements List {
   }
 
   public ListIterator<E> listIterator() {
-  
+    return new SinglyLinkedNodeListIterator();
   }
 
   public ListIterator<E> listIterator(int index) {
-
+    return new SinglyLinkedNodeListIterator(index);
   }
 
   public E remove(int index) {
+    checkIndex(index);
+    E retVal;
 
+    if (index == 0) {
+      retVal = _head.getValue();
+      _head = _head.getNext();
+      if (_length == 1) {
+        _tail = null;
+      }
+    } else {
+      SinglyLinkedNode<E> previous = getNode(index - 1);
+      SinglyLinkedNode<E> retNode = previous.getNext();
+      retVal = retNode.getValue();
+      previous.setNext(retNode.getNext());
+      if (index == _length - 1) {
+        _tail = previous;
+      }
+
+    }
+    _length -= 1;
+    return retVal;
   }
 
   public boolean remove(Object o) {
+    Iterator<E> iterator = iterator();
+    while (iterator.hasNext()) {
+      E elem = iterator.next();
+      if (o == null ? elem == null : elem.equals(o)) {
+        iterator.remove();
+        return true;
+      }
+    }
     return false;
   }
 
   public boolean removeAll(Collection<?> c) {
-
+    boolean elementRemoved = false;
+    for (Object o : c) {
+      elementRemoved = remove(o);
+    }
+    return elementRemoved;
   }
 
-  public boolean retainALL(Collection<?> c) {
+  public boolean retainAll(Collection<?> c) {
+    Iterator<E> iterator = iterator();
+    boolean elementRemoved = false;
+    while (iterator.hasNext()) {
+      E elem = iterator.next();
+      if (!c.contains(elem)) {
+        iterator.remove();
+        elementRemoved = true;
+      }
+    }
+    return elementRemoved;
+  }
 
+  public E set(int index, E elem) {
+    SinglyLinkedNode<E> node = getNode(index);
+    E retVal = node.getValue();
+    node.setValue(elem);
+    return retVal;
   }
 
   public int size() {
@@ -206,43 +223,82 @@ public class LinkedList<E> implements List {
   }
 
   public List<E> subList(int fromIndex, int toIndex) {
+    if (fromIndex < 0 || toIndex > _length || fromIndex > toIndex) {
+      throw new IndexOutOfBoundsException();
+    }
 
+    LinkedList<E> retList = new LinkedList<E>();
+    if (fromIndex == toIndex) {
+      retList.add(getNode(fromIndex).getValue());
+    } else {
+      int index = fromIndex;
+      do {
+        retList.add(getNode(index).getValue());
+        index += 1;
+      } while (index < toIndex);
+    }
+    return retList;
   }
 
   public Object[] toArray() {
-
+    Object[] retArray = new Object[_length];
+    int i = 0;
+    for (E e : this) {
+      retArray[i] = e;
+      i += 1;
+    }
+    return retArray;
   }
 
   public <T> T[] toArray(T[] a) {
-    T[] y;
-    return y;
+    if (a.length < _length) {
+      return (T[]) toArray();
+    } else {
+      int i = 0;
+      for (E e : this) {
+        a[i] = (T) e;
+        i += 1;
+      }
+
+      if (a.length > _length) {
+        a[_length] = null;
+      }
+      return a;
+    }
   }
 
   private void checkIndex(int index) {
-    if (index < 0 || index > _length) {
+    if (index < 0 || index >= _length) {
       throw new IndexOutOfBoundsException("invalid index: " + index);
     }
   }
 
-  private SinglyLinkedNode<E> getNode(int index) {
+  private SinglyLinkedNode<E> getNode(int index, boolean throwException) {
     try {
       checkIndex(index);
-      int iterator = 0;
-      SinglyLinkedNode pointer = _head;
-      while (iterator < index) {
-        pointer = pointer.getNext();
-        iterator += 1;
-      }
-      return pointer;
     } catch (IndexOutOfBoundsException e) {
+      if (throwException) {
+        throw e;
+      }
       return null;
     }
+    int iterator = 0;
+    SinglyLinkedNode<E> pointer = _head;
+    while (iterator < index) {
+      pointer = pointer.getNext();
+      iterator += 1;
+    }
+    return pointer;
   }
 
-  public class SinglyLinkedNodeIterator<E> implements Iterator<E> {
-    SinglyLinkedNodeListIterator<E> _listIterator;
+  private SinglyLinkedNode<E> getNode(int index) {
+    return getNode(index, true);
+  }
 
-    public SinglyLinkedNodeIterator(SinglyLinkedNode<E> head) {
+  public class SinglyLinkedNodeIterator implements Iterator<E> {
+    SinglyLinkedNodeListIterator _listIterator;
+
+    public SinglyLinkedNodeIterator() {
       _listIterator = new SinglyLinkedNodeListIterator();
     }
 
@@ -260,20 +316,39 @@ public class LinkedList<E> implements List {
 
   }
 
-  public class SinglyLinkedNodeListIterator<E> implements ListIterator<E> {
+  public class SinglyLinkedNodeListIterator implements ListIterator<E> {
     int _previousIndex;
     int _nextIndex;
+
     SinglyLinkedNode<E> _previous;
     SinglyLinkedNode<E> _next;
     IteratorCall _lastCall;
 
 
     public SinglyLinkedNodeListIterator() {
-      _nextIndex = 0;
-      _previousIndex = -1;
-      _previous = null;
-      _next = _head;
+      this(0);
+
+    }
+
+    public SinglyLinkedNodeListIterator(int index) {
+      checkIndex(index);
+      _nextIndex = index;
+      _previousIndex = index - 1;
+      if (index == 0) {
+        _previous = null;
+        _next = _head;
+      } else {
+        _previous = _head;
+        int i = 0;
+        while (i < index - 1) {
+          _previous = _previous.getNext();
+          i += 1;
+        }
+        _next = _previous.getNext();
+      }
       _lastCall = null;
+
+
     }
 
     public E next() {
@@ -301,7 +376,7 @@ public class LinkedList<E> implements List {
         _lastCall = IteratorCall.PREVIOUS;
 
         // Move cursor
-        SinglyLinkedNode _newPrevious = _head;
+        SinglyLinkedNode<E> _newPrevious = _head;
         while (_newPrevious.getNext() != _previous) {
           _newPrevious = _newPrevious.getNext();
         }
@@ -321,7 +396,7 @@ public class LinkedList<E> implements List {
     public int previousIndex() { return _previousIndex; }
 
     public void add(E e) {
-      SinglyLinkedNode newNode = new SinglyLinkedNode<E>(e, _next);
+      SinglyLinkedNode<E> newNode = new SinglyLinkedNode<E>(e, _next);
 
       if (_previousIndex == -1) {
         _head = newNode;
@@ -349,7 +424,7 @@ public class LinkedList<E> implements List {
           _head = _next;
           _previous = null;
         } else {
-          SinglyLinkedNode prevPrevious = _head;
+          SinglyLinkedNode<E> prevPrevious = _head;
           while (prevPrevious.getNext() != _previous) {
             prevPrevious = prevPrevious.getNext();
           }
@@ -361,12 +436,12 @@ public class LinkedList<E> implements List {
         }
         decrementIndices();
       } else {
-        SinglyLinkedNode newNext = _next.getNext();
+        SinglyLinkedNode<E> newNext = _next.getNext();
         _next = newNext;
         if (_previous == null) {
           _head = _next;
         } else {
-          _previous.setNext(_next.getNext());
+          _previous.setNext(newNext);
         }
         if (_next == null) {
           _tail = _previous;
@@ -402,8 +477,6 @@ public class LinkedList<E> implements List {
     }
 
   }
-}
-
 
   private enum IteratorCall {
     ADD, NEXT, PREVIOUS, REMOVE
